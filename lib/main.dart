@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
-import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,7 +15,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
       child: MaterialApp(
-        title: 'Namer App',
+        title: 'Movie App',
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
@@ -28,33 +27,19 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
-  var current = WordPair.random();
-  var history = <WordPair>[];
+  var favorites = <String>[];
 
-  GlobalKey? historyListKey;
-
-  void getNext() {
-    history.insert(0, current);
-    var animatedList = historyListKey?.currentState as AnimatedListState?;
-    animatedList?.insertItem(0);
-    current = WordPair.random();
-    notifyListeners();
-  }
-
-  var favorites = <WordPair>[];
-
-  void toggleFavorite([WordPair? pair]) {
-    pair = pair ?? current;
-    if (favorites.contains(pair)) {
-      favorites.remove(pair);
+  void toggleFavorite(String movieUrl) {
+    if (favorites.contains(movieUrl)) {
+      favorites.remove(movieUrl);
     } else {
-      favorites.add(pair);
+      favorites.add(movieUrl);
     }
     notifyListeners();
   }
 
-  void removeFavorite(WordPair pair) {
-    favorites.remove(pair);
+  void removeFavorite(String movieUrl) {
+    favorites.remove(movieUrl);
     notifyListeners();
   }
 }
@@ -74,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget page;
     switch (selectedIndex) {
       case 0:
-        page = GeneratorPage();
+        page = MovieGridPage();
         break;
       case 1:
         page = FavoritesPage();
@@ -106,8 +91,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: BottomNavigationBar(
                     items: [
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.home),
-                        label: 'Home',
+                        icon: Icon(Icons.movie),
+                        label: 'Movies',
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.favorite),
@@ -121,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       });
                     },
                   ),
-                )
+                ),
               ],
             );
           } else {
@@ -132,8 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     extended: constraints.maxWidth >= 600,
                     destinations: [
                       NavigationRailDestination(
-                        icon: Icon(Icons.home),
-                        label: Text('Home'),
+                        icon: Icon(Icons.movie),
+                        label: Text('Movies'),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.favorite),
@@ -158,94 +143,111 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class GeneratorPage extends StatelessWidget {
+class MovieGridPage extends StatelessWidget {
+  final List<String> movieUrls = [
+    'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
+    'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+    'https://m.media-amazon.com/images/M/MV5BMDFkYTc0MGEtZm9jYi00ZWE0LWE4NWQtMjQ2M2JiM2JlNzZmXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_FMjpg_UX1000_.jpg',
+    'https://m.media-amazon.com/images/I/81a6-mIEVPL._AC_UF1000,1000_QL80_.jpg',
+    'https://m.media-amazon.com/images/M/MV5BMzU3YTY3NzEtNzJhZi00ZWI4LTk3NzUtMDYxZTUzZGNhNDdkXkEyXkFqcGdeQXVyMDM2NDM2MQ@@._V1_.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-x6p3mO7tJ7Q55n4X0-KjE9XpQe7jX2jK6w&usqp=CAU',
+    'https://m.media-amazon.com/images/M/MV5BMjMxNjY2MDU1OV5BMl5BanBnXkEycC4wNDEyMw@@._V1_.jpg',
+    'https://i.ebayimg.com/images/g/L3EAAOSwbs9i6y14/s-l1600.jpg',
+    'https://upload.wikimedia.org/wikipedia/en/0/05/Up_%282009_film%29.jpg',
+    'https://static.onecms.io/wp-content/uploads/sites/20/2023/07/20/the-lion-king-movie-poster.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQw4IlE1kTj7_vjS-61X8MMr_eTN-3o-f2Xqw&usqp=CAU',
+    'https://m.media-amazon.com/images/M/MV5BNjRmNDI5ODItN2FjZi00ZTZkLTg1MmEtMDI3ZDQ3OWU4NGJjXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_.jpg',
+    'https://i.pinimg.com/736x/9f/5d/d1/9f5dd12cf1277b793263f4a33d5f01fd.jpg',
+    'https://m.media-amazon.com/images/M/MV5BMDdmMTBiNzQtMDIzNi00NGZmLTkyNjEtYTVlNjQxNWNiNmZkXkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg',
+    'https://i.ebayimg.com/images/g/p00AAOSw2pRh3bJ6/s-l1600.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQp9h-37G8FfB0H5qU22E5k_y160Q-Zt6_yVw&usqp=CAU',
+    'https://i.ytimg.com/vi/wJnUe-8N2kQ/maxresdefault.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv1l5m4K-p617m-WkX2t0g7q1M8M9Q_s4HNg&usqp=CAU',
+    'https://m.media-amazon.com/images/M/MV5BMTg1MTY2MjczNV5BMl5BanBnXkFtZTgwMTk5NjIzMTI@._V1_.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1HnNgn9oQoK6T95w5H8Y5T7xJvWf3-B0oUw&usqp=CAU',
+  ];
+
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
-    IconData icon;
-    if (appState.favorites.contains(pair)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 3,
-            child: HistoryListView(),
-          ),
-          SizedBox(height: 10),
-          BigCard(pair: pair),
-          SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite();
-                },
-                icon: Icon(icon),
-                label: Text('Like'),
-              ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  appState.getNext();
-                },
-                child: Text('Next'),
-              ),
-            ],
-          ),
-          Spacer(flex: 2),
-        ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: MovieGridView(movieUrls: movieUrls),
       ),
     );
   }
 }
 
-class BigCard extends StatelessWidget {
-  const BigCard({
-    Key? key,
-    required this.pair,
-  }) : super(key: key);
+class MovieGridView extends StatelessWidget {
+  const MovieGridView({super.key, required this.movieUrls});
 
-  final WordPair pair;
+  final List<String> movieUrls;
 
   @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    var style = theme.textTheme.displayMedium!.copyWith(
-      color: theme.colorScheme.onPrimary,
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.6,
+      ),
+      itemCount: movieUrls.length,
+      itemBuilder: (context, index) {
+        return MovieCard(movieUrl: movieUrls[index]);
+      },
     );
+  }
+}
+
+class MovieCard extends StatelessWidget {
+  const MovieCard({super.key, required this.movieUrl});
+
+  final String movieUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var isFavorite = appState.favorites.contains(movieUrl);
 
     return Card(
-      color: theme.colorScheme.primary,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: AnimatedSize(
-          duration: Duration(milliseconds: 200),
-          // Make sure that the compound word wraps correctly when the window
-          // is too narrow.
-          child: MergeSemantics(
-            child: Wrap(
-              children: [
-                Text(
-                  pair.first,
-                  style: style.copyWith(fontWeight: FontWeight.w200),
-                ),
-                Text(
-                  pair.second,
-                  style: style.copyWith(fontWeight: FontWeight.bold),
-                )
-              ],
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Ink.image(
+            image: NetworkImage(movieUrl),
+            height: 250,
+            fit: BoxFit.cover,
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.transparent, Colors.black87],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Movie Title', style: TextStyle(color: Colors.white)),
+                  IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      appState.toggleFavorite(movieUrl);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -254,111 +256,39 @@ class BigCard extends StatelessWidget {
 class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context);
     var appState = context.watch<MyAppState>();
 
     if (appState.favorites.isEmpty) {
-      return Center(
-        child: Text('No favorites yet.'),
-      );
+      return Center(child: Text('No favorites yet.'));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(30),
-          child: Text('You have '
-              '${appState.favorites.length} favorites:'),
-        ),
-        Expanded(
-          // Make better use of wide windows with a grid.
-          child: GridView(
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 400,
-              childAspectRatio: 400 / 80,
-            ),
-            children: [
-              for (var pair in appState.favorites)
-                ListTile(
-                  leading: IconButton(
-                    icon: Icon(Icons.delete_outline, semanticLabel: 'Delete'),
-                    color: theme.colorScheme.primary,
-                    onPressed: () {
-                      appState.removeFavorite(pair);
-                    },
-                  ),
-                  title: Text(
-                    pair.asLowerCase,
-                    semanticsLabel: pair.asPascalCase,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FavoriteMoviesGridView(movieUrls: appState.favorites),
+      ),
     );
   }
 }
 
-class HistoryListView extends StatefulWidget {
-  const HistoryListView({Key? key}) : super(key: key);
+class FavoriteMoviesGridView extends StatelessWidget {
+  const FavoriteMoviesGridView({super.key, required this.movieUrls});
 
-  @override
-  State<HistoryListView> createState() => _HistoryListViewState();
-}
-
-class _HistoryListViewState extends State<HistoryListView> {
-  /// Needed so that [MyAppState] can tell [AnimatedList] below to animate
-  /// new items.
-  final _key = GlobalKey();
-
-  /// Used to "fade out" the history items at the top, to suggest continuation.
-  static const Gradient _maskingGradient = LinearGradient(
-    // This gradient goes from fully transparent to fully opaque black...
-    colors: [Colors.transparent, Colors.black],
-    // ... from the top (transparent) to half (0.5) of the way to the bottom.
-    stops: [0.0, 0.5],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
+  final List<String> movieUrls;
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<MyAppState>();
-    appState.historyListKey = _key;
-
-    return ShaderMask(
-      shaderCallback: (bounds) => _maskingGradient.createShader(bounds),
-      // This blend mode takes the opacity of the shader (i.e. our gradient)
-      // and applies it to the destination (i.e. our animated list).
-      blendMode: BlendMode.dstIn,
-      child: AnimatedList(
-        key: _key,
-        reverse: true,
-        padding: EdgeInsets.only(top: 100),
-        initialItemCount: appState.history.length,
-        itemBuilder: (context, index, animation) {
-          final pair = appState.history[index];
-          return SizeTransition(
-            sizeFactor: animation,
-            child: Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite(pair);
-                },
-                icon: appState.favorites.contains(pair)
-                    ? Icon(Icons.favorite, size: 12)
-                    : SizedBox(),
-                label: Text(
-                  pair.asLowerCase,
-                  semanticsLabel: pair.asPascalCase,
-                ),
-              ),
-            ),
-          );
-        },
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.6,
       ),
+      itemCount: movieUrls.length,
+      itemBuilder: (context, index) {
+        return MovieCard(movieUrl: movieUrls[index]);
+      },
     );
   }
 }
