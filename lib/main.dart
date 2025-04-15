@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:animations/animations.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
       child: MaterialApp(
-        title: 'Movie App',
+        title: 'Spoiler Alert',
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
@@ -49,8 +50,37 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   var selectedIndex = 0;
+  bool _showTitle = true;
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.offset <= _scrollController.position.minScrollExtent &&
+        !_scrollController.position.outOfRange) {
+      setState(() {
+        _showTitle = true;
+      });
+    } else {
+      setState(() {
+        _showTitle = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,31 +89,45 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget page;
     switch (selectedIndex) {
       case 0:
-        page = MovieGridPage();
+        page = MovieGridPage(scrollController: _scrollController);
         break;
       case 1:
-        page = FavoritesPage();
+        page = FavoritesPage(scrollController: _scrollController);
         break;
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
 
-    // The container for the current page, with its background color
-    // and subtle switching animation.
     var mainArea = ColoredBox(
       color: colorScheme.surfaceVariant,
-      child: AnimatedSwitcher(
-        duration: Duration(milliseconds: 200),
+      child: PageTransitionSwitcher(
+        transitionBuilder: (
+          Widget child,
+          Animation<double> primaryAnimation,
+          Animation<double> secondaryAnimation,
+        ) {
+          return SharedAxisTransition(
+            animation: primaryAnimation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.horizontal,
+            child: child,
+          );
+        },
+        duration: const Duration(milliseconds: 300),
         child: page,
       ),
     );
 
     return Scaffold(
+      appBar: _showTitle
+          ? AppBar(
+              title: Text('Spoiler Alert'),
+              centerTitle: true,
+            )
+          : null,
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth < 450) {
-            // Use a more mobile-friendly layout with BottomNavigationBar
-            // on narrow screens.
             return Column(
               children: [
                 Expanded(child: mainArea),
@@ -144,6 +188,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class MovieGridPage extends StatelessWidget {
+  MovieGridPage({Key? key, required this.scrollController}) : super(key: key);
+
   final List<String> movieUrls = [
     'https://www.gstatic.com/flutter-onestack-prototype/genui/example_1.jpg',
     'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
@@ -167,27 +213,34 @@ class MovieGridPage extends StatelessWidget {
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1HnNgn9oQoK6T95w5H8Y5T7xJvWf3-B0oUw&usqp=CAU',
   ];
 
+  final ScrollController scrollController;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: MovieGridView(movieUrls: movieUrls),
+        child: MovieGridView(
+            movieUrls: movieUrls, scrollController: scrollController),
       ),
     );
   }
 }
 
 class MovieGridView extends StatelessWidget {
-  const MovieGridView({super.key, required this.movieUrls});
+  const MovieGridView(
+      {super.key, required this.movieUrls, required this.scrollController});
 
   final List<String> movieUrls;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
+      controller: scrollController,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount:
+            MediaQuery.of(context).size.width < 600 ? 2 : 3, // Responsive
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
         childAspectRatio: 0.6,
@@ -233,7 +286,13 @@ class MovieCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Movie Title', style: TextStyle(color: Colors.white)),
+                  Expanded(
+                    child: Text(
+                      'Movie Title',
+                      style: TextStyle(color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   IconButton(
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -254,6 +313,11 @@ class MovieCard extends StatelessWidget {
 }
 
 class FavoritesPage extends StatelessWidget {
+  const FavoritesPage({Key? key, required this.scrollController})
+      : super(key: key);
+
+  final ScrollController scrollController;
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -265,22 +329,29 @@ class FavoritesPage extends StatelessWidget {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: FavoriteMoviesGridView(movieUrls: appState.favorites),
+        child: FavoriteMoviesGridView(
+          movieUrls: appState.favorites,
+          scrollController: scrollController,
+        ),
       ),
     );
   }
 }
 
 class FavoriteMoviesGridView extends StatelessWidget {
-  const FavoriteMoviesGridView({super.key, required this.movieUrls});
+  const FavoriteMoviesGridView(
+      {super.key, required this.movieUrls, required this.scrollController});
 
   final List<String> movieUrls;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
+      controller: scrollController,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount:
+            MediaQuery.of(context).size.width < 600 ? 2 : 3, // Responsive
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
         childAspectRatio: 0.6,
